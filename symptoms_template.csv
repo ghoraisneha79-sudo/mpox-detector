@@ -1,0 +1,9 @@
+filename,fever,lymph_swelling,lesion_count,rash_duration
+MK_001.jpg,1,1,12,7
+MK_002.jpg,1,0,8,4
+MK_003.jpg,0,1,20,10
+MK_004.jpg,1,1,35,14
+MK_005.jpg,0,0,5,2
+OT_001.jpg,0,0,2,1
+OT_002.jpg,0,0,1,0
+OT_003.jpg,1,0,3,2

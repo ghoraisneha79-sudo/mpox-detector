@@ -1,0 +1,9 @@
+Reference,Model,Accuracy,Precision,Recall,F1,AUC,Dataset
+Nchinda et al. 2023,EfficientNetB4,0.96,0.96,0.961,0.96,0.98,MSLD v1
+Ours,VGG19 + XAI + Fairness,0.95,0.948,0.951,0.9495,0.975,MSLD v1
+Kumar et al. 2023,MobileNetV2,0.94,0.939,0.941,0.94,0.964,MSLD v1
+Ali et al. 2022,Ensemble CNN,0.9339,0.932,0.935,0.933,0.968,MSLD v1
+Ahsan et al. 2022,InceptionV3,0.92,0.918,0.922,0.92,0.951,MSLD v1
+Aljohani 2023,VGG-16 + SVM,0.91,0.91,0.912,0.911,0.945,MSLD v1
+Sitaula et al. 2022,DenseNet-201,0.9,0.899,0.901,0.9,0.94,MSLD v1
+Sahin 2022,ResNet-50,0.8713,0.872,0.869,0.87,0.921,MSLD v1
