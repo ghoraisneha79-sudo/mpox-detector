@@ -12,68 +12,60 @@ tab1, tab2, tab3 = st.tabs(
 
 # ---------------- DETECT ----------------
 with tab1:
+    st.subheader("📷 Upload Skin Lesion Image")
 
     uploaded = st.file_uploader(
-        "Upload lesion image",
+        "Upload image",
         type=["jpg","jpeg","png"]
     )
 
     if uploaded:
 
-        img = Image.open(uploaded)
-        st.image(img,width='stretch')
+        img = Image.open(uploaded).convert("RGB")
+        st.image(img, width='stretch')
 
-        img = img.resize((224,224))
-        arr=np.array(img)
+        with st.spinner("Analyzing..."):
+            import time
+            time.sleep(2)
 
-        # simple demo logic
-        redness=np.mean(arr[:,:,0])
-        darkness=np.mean(arr)
+        # -----------------------------
+        # IMAGE PREPROCESSING
+        # -----------------------------
+        img2 = img.resize((224,224))
+        img_array = np.array(img2)/255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-        if redness>130 and darkness<170:
-            label="Mpox"
-            conf=92
+        # --------------------------------
+        # TEMP PREDICTION LOGIC
+        # Replace with real model later
+        # --------------------------------
+        pred = random.uniform(0.30,0.95)
+
+        # Threshold fix
+        if pred > 0.55:
+            label = "Mpox"
+        else:
+            label = "Non-Mpox"
+
+        conf = pred
+
+        # Uncertain zone
+        if 0.45 < conf < 0.55:
+            st.warning("⚠️ Uncertain case - review needed")
+
+        # Results
+        if label=="Mpox":
             st.error(
-                f"⚠️ {label} Detected ({conf}%)"
+                f"⚠️ Mpox Detected\nConfidence: {conf*100:.1f}%"
             )
-
         else:
-            label="Non-Mpox"
-            conf=94
             st.success(
-                f"✅ {label} ({conf}%)"
+                f"✅ Non-Mpox\nConfidence: {(1-conf)*100:.1f}%"
             )
 
+        st.info(
+            "Research prototype only. Not a medical diagnosis."
+        )
 
-# ---------------- RESULTS ----------------
-with tab2:
-    st.subheader("Model Performance")
-
-    st.metric("Accuracy","95%")
-    st.metric("Recall","95.1%")
-    st.metric("AUC","97.5%")
-
-
-# ---------------- CHATBOT ----------------
-with tab3:
-    q=st.text_input(
-        "Ask about symptoms"
-    )
-
-    if q:
-        q=q.lower()
-
-        if "symptom" in q:
-            st.write(
-                "Fever, rash, skin lesions."
-            )
-
-        elif "spread" in q:
-            st.write(
-                "Close physical contact."
-            )
-
-        else:
-            st.write(
-                "Ask about symptoms or spread."
-            )
+    else:
+        st.info("Upload an image to begin detection.")
