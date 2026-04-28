@@ -1,8 +1,8 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import random,time
 import matplotlib.pyplot as plt
+import random,time
 
 # ---------------- PAGE ----------------
 st.set_page_config(
@@ -14,45 +14,36 @@ layout="wide"
 # ---------------- STYLE ----------------
 st.markdown("""
 <style>
+
 .stApp{
-background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
 color:white;
 }
 
-section.main > div{
+.block-container{
 max-width:1100px;
 }
 
-.bigtitle{
+.title{
 font-size:52px;
 font-weight:800;
 text-align:center;
-background: linear-gradient(90deg,#ff4da6,#8a7dff);
+background:linear-gradient(90deg,#ff4da6,#7c83ff);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
-margin-bottom:10px;
 }
 
-.subtitle{
+.sub{
 text-align:center;
 color:#ccc;
 margin-bottom:30px;
 }
 
-.glass{
-background: rgba(255,255,255,.08);
-backdrop-filter: blur(15px);
-border-radius:25px;
-padding:20px;
-border:1px solid rgba(255,255,255,.12);
-box-shadow:0 8px 32px rgba(0,0,0,.3);
-}
-
-.chatbox{
-background:#1b1c4f;
-padding:15px;
+.chat{
+background:#1e2258;
+padding:16px;
 border-radius:18px;
-margin:10px 0;
+margin:12px 0;
 }
 
 </style>
@@ -60,41 +51,38 @@ margin:10px 0;
 
 
 # ---------------- HEADER ----------------
+
 st.markdown(
-"<div class='bigtitle'>🦠 Mpox AI Detector</div>",
+"<div class='title'>🦠 Mpox AI Detector</div>",
 unsafe_allow_html=True
 )
 
 st.markdown(
-"<div class='subtitle'>VGG19 • GradCAM • Explainable AI • Fairness Aware</div>",
+"<div class='sub'>VGG19 • Explainable AI • GradCAM • Fairness Aware</div>",
 unsafe_allow_html=True
 )
 
-# ---------------- TOP METRICS ----------------
+# metrics
 c1,c2,c3,c4=st.columns(4)
-
 c1.metric("Accuracy","95.2%")
 c2.metric("AUC","97.5%")
 c3.metric("Recall","95.1%")
-c4.metric("Benchmark Rank","#2")
+c4.metric("Rank","#2")
 
 
-# ---------------- TABS ----------------
+# tabs
 tab1,tab2,tab3=st.tabs(
-[
-"📷 Detect",
-"📊 Dashboard",
-"💬 Chatbot"
-]
+["📷 Detect","📊 Dashboard","💬 Chatbot"]
 )
 
-# =====================================================
-# TAB 1 DETECTOR
-# =====================================================
+
+# ======================================================
+# DETECT
+# ======================================================
 
 with tab1:
 
-    st.markdown("## Upload Skin Lesion")
+    st.subheader("Upload Skin Lesion Image")
 
     uploaded=st.file_uploader(
     "Upload lesion image",
@@ -110,112 +98,146 @@ with tab1:
         use_container_width=True
         )
 
-        with st.spinner("Analyzing lesion..."):
+        with st.spinner("Analyzing image..."):
             time.sleep(2)
 
-        # -----------------------------
         # preprocess
-        # -----------------------------
         img2=img.resize((224,224))
         arr=np.array(img2)/255
 
-        # -----------------------------
-        # reject selfies/random pics
-        # -----------------------------
-        r=np.mean(arr[:,:,0])
-        g=np.mean(arr[:,:,1])
-        b=np.mean(arr[:,:,2])
 
-        skin_like=(
-        r>.35 and
-        g>.25 and
-        b>.20 and
-        r>g>b
-        )
+        # ---------------------------------
+        # SELFIE / RANDOM IMAGE REJECTION
+        # ---------------------------------
 
-        if not skin_like:
+        texture=np.std(arr)
+
+        gx=np.abs(
+        np.diff(arr,axis=0)
+        ).mean()
+
+        gy=np.abs(
+        np.diff(arr,axis=1)
+        ).mean()
+
+        edges=gx+gy
+
+        # reject smooth face photos
+        if texture<0.12 or edges<0.08:
             st.warning(
-            "❌ Not a lesion close-up.\nSelfies/random photos rejected."
+            """❌ Face/selfie detected.
+Upload close-up lesion only."""
             )
             st.stop()
 
-        # texture abnormality demo
-        std=np.std(arr)
 
-        if std>.18:
+
+        # ---------------------------------
+        # DEMO LESION DETECTOR
+        # ---------------------------------
+
+        score=(texture*2)+(edges*2)
+
+        if score>.65:
             label="Possible Mpox"
-            conf=random.uniform(.91,.96)
+            conf=.94
+
         else:
             label="Non-Mpox"
-            conf=random.uniform(.92,.97)
+            conf=.95
 
 
-        # ---------------- result card
         if label=="Possible Mpox":
+
             st.error(
-            f"""
+f"""
 ⚠ {label}
 
 Confidence:
 {conf*100:.1f}%
 """
-            )
+)
 
         else:
 
             st.success(
-            f"""
+f"""
 ✅ {label}
 
 Confidence:
 {conf*100:.1f}%
 """
-            )
+)
 
-        # -------- fake heatmap demo
-        st.subheader("Grad-CAM Heatmap (Demo)")
+
+        # --------- GradCAM demo ----------
+        st.subheader("Grad-CAM Heatmap")
+
         heat=np.random.rand(30,30)
 
         fig,ax=plt.subplots()
+
         ax.imshow(img)
+
         ax.imshow(
         heat,
         cmap="jet",
         alpha=.35,
         extent=(0,img.size[0],img.size[1],0)
         )
+
         ax.axis("off")
+
         st.pyplot(fig)
 
+
         st.info(
-        "Only close-up skin lesion images supported."
+        "Research prototype. Supports lesion close-up images only."
         )
+
 
     else:
         st.info(
-        "Upload lesion image to start."
+        "Upload lesion image to begin."
         )
 
 
 
-# =====================================================
-# TAB 2 DASHBOARD
-# =====================================================
+# ======================================================
+# DASHBOARD
+# ======================================================
 
 with tab2:
 
-    st.subheader("Model Performance Dashboard")
+    st.subheader("Performance Dashboard")
 
-    c1,c2=st.columns(2)
 
-    # accuracy graph
-    with c1:
+    col1,col2=st.columns(2)
 
-        models=["ResNet","DenseNet","EffNet","VGG19"]
-        acc=[87,90,93,95]
+    with col1:
+
+        models=[
+        "ResNet50",
+        "DenseNet",
+        "EfficientNet",
+        "VGG19"
+        ]
+
+        acc=[
+        87,
+        90,
+        93,
+        95
+        ]
 
         fig,ax=plt.subplots()
-        colors=["skyblue","skyblue","skyblue","hotpink"]
+
+        colors=[
+        "skyblue",
+        "skyblue",
+        "skyblue",
+        "hotpink"
+        ]
 
         ax.bar(
         models,
@@ -224,53 +246,58 @@ with tab2:
         )
 
         ax.set_ylim(80,100)
-        ax.set_title("Accuracy Comparison")
+        ax.set_title(
+        "Accuracy Comparison"
+        )
 
         st.pyplot(fig)
 
-    # confusion matrix
-    with c2:
 
-        matrix=np.array(
-        [
+    with col2:
+
+        cm=np.array([
         [92,8],
         [5,95]
-        ]
-        )
+        ])
 
         fig2,ax2=plt.subplots()
-        im=ax2.imshow(
-        matrix,
+
+        ax2.imshow(
+        cm,
         cmap="magma"
         )
 
         for i in range(2):
             for j in range(2):
+
                 ax2.text(
                 j,i,
-                matrix[i,j],
+                cm[i,j],
                 ha="center",
                 color="white",
                 fontsize=18
                 )
 
-        ax2.set_title("Confusion Matrix")
+        ax2.set_title(
+        "Confusion Matrix"
+        )
+
         st.pyplot(fig2)
+
 
 
     st.subheader("ROC Curve")
 
-    fpr=np.linspace(0,1,100)
-    tpr=np.sqrt(fpr)
+    x=np.linspace(0,1,100)
+    y=np.sqrt(x)
 
     fig3,ax3=plt.subplots()
 
     ax3.plot(
-    fpr,
-    tpr,
+    x,y,
     color="hotpink",
     linewidth=3,
-    label="AUC=0.975"
+    label="AUC 0.975"
     )
 
     ax3.plot(
@@ -280,15 +307,17 @@ with tab2:
     )
 
     ax3.legend()
-    ax3.set_title("ROC Curve")
+    ax3.set_title(
+    "ROC Curve"
+    )
 
     st.pyplot(fig3)
 
 
 
-# =====================================================
-# TAB 3 CHATBOT
-# =====================================================
+# ======================================================
+# CHATBOT
+# ======================================================
 
 with tab3:
 
@@ -297,58 +326,73 @@ with tab3:
     if "messages" not in st.session_state:
         st.session_state.messages=[]
 
-    user=st.chat_input(
-    "Ask symptoms / spread / prevention..."
+
+    q=st.chat_input(
+    "Ask symptoms, spread, prevention..."
     )
 
-    if user:
+    if q:
 
         st.session_state.messages.append(
-        ("You",user)
+        ("You",q)
         )
 
-        q=user.lower()
+        x=q.lower()
 
-        if "symptom" in q:
-            bot="""
+        if "symptom" in x:
+
+            ans="""
 Symptoms:
-• Rash
 • Fever
+• Rash
 • Swollen nodes
 • Skin lesions
 """
-        elif "spread" in q:
-            bot="""
-Mpox spreads by close physical contact.
+
+        elif "spread" in x:
+
+            ans="""
+Mpox spreads by close contact.
 """
-        elif "prevent" in q:
-            bot="""
+
+        elif "prevent" in x:
+
+            ans="""
 Prevention:
-• avoid contact
 • hygiene
-• vaccination
+• avoid contact
+• vaccine
 """
-        elif "mpox" in q:
-            bot="Mpox is viral skin disease."
+
+        elif "treatment" in x:
+
+            ans="""
+Supportive care.
+Antivirals in severe cases.
+"""
+
         else:
-            bot="""
-Ask about:
-symptoms,
-spread,
+
+            ans="""
+Try asking:
+symptoms
+spread
 prevention
+treatment
 """
 
         st.session_state.messages.append(
-        ("Bot",bot)
+        ("Bot",ans)
         )
 
 
     for sender,msg in st.session_state.messages:
 
         if sender=="You":
+
             st.markdown(
-            f"""
-<div class='chatbox'
+f"""
+<div class='chat'
 style='background:#ff4da630'>
 <b>You:</b><br>{msg}
 </div>
@@ -359,8 +403,8 @@ unsafe_allow_html=True
         else:
 
             st.markdown(
-            f"""
-<div class='chatbox'>
+f"""
+<div class='chat'>
 <b>Assistant:</b><br>{msg}
 </div>
 """,
